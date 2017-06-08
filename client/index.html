@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Hot dog or not hot dog</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <script>
+      var app = angular.module("app", []);
+      app.controller('MainController', function ($scope, $http, $location) {
+        //get accesstoken from url
+        parseParams = function() {
+            var params = {}, queryString = location.hash.substring(1), regex = /([^&=]+)=([^&]*)/g,m;
+            while (m = regex.exec(queryString)) {
+                params[decodeURIComponent(m[1])] = decodeURIComponent(m[2]);
+            }
+            return params;
+        };
+        params = parseParams();
+        $scope.access_token = params.access_token;
+          
+        $scope.responseUrl = "";
+          
+        $scope.verifyImage = function () {
+            $scope.counter = 0;
+            $http.post("https://vision.googleapis.com/v1/images:annotate?key=AIzaSyAeCEk-BlJd7Pwz2ib6CqMiR3o54FLWSwo", '{"requests":[{"image":{"source":{"imageUri":"'+ $scope.imgUrl +'"}},"features":[{"type":"LABEL_DETECTION"}]}]}')
+            .then(function(response){
+                $scope.imageLabels = response.data.responses.labelAnnotations;
+                                checkforHotdog();
+            })
+            .then(function(){
+            });           
+            
+            var checkforHotdog = function(){
+                for (annotation in $scope.imageLabels){
+                    alert(annotation.description)
+                    if(annotation.description === "hot dog"){
+                        $scope.counter += 1;                        
+                    }
+                };
+                if ($scope.counter > 0){
+                    $scope.reponse = 'yes'                 
+                }   
+                else {
+                    $scope.response = 'no'
+                };
+                $http.get('https://yesno.wtf/api?force=' + $scope.response )
+                .then(function(response){
+                    $scope.responseUrl = response.data;
+                });
+            };
+            }
+
+        $scope.login = function() {
+          window.location.href="https://api.instagram.com/oauth/authorize/?client_id=25eb6fd96ad84801b2fee14951afb981&redirect_uri=http://localhost:3000/&response_type=token" 
+        };
+
+      });
+    </script>
+  </head>
+  <body ng-app="app" class="background">
+    <div ng-controller="MainController" class="content">
+      <h1 class="header">Hot dog or not hot dog</h1>
+
+      <h2>Inspiratie voor dit idee</h2>
+      <a href="https://www.youtube.com/watch?v=ACmydtFDTGs">https://www.youtube.com/watch?v=ACmydtFDTGs</a>
+
+      <div class="form">
+        <input placeholder="Copy image url to check hot dog" ng-model="imgUrl" />
+        <button ng-click="verifyImage()">Upload image</button>
+      </div>
+
+      <div>
+        <img ng-src="{{ responseUrl.image }}"></img>
+        <h5 ng-repeat="label in imageLabes">{{label.description}}</h5>
+        <h3>{{ responseUrl.answer }} {{counter}} {{responseUrl.forced}} </h3>
+      </div>
+
+      <h1>OAuth</h1>
+      <button ng-show="!access_token" ng-click="login()">Login</button>
+      <p>Show Instagram access token here: {{ access_token }}</p>
+
+    </div>
+  </body>
+</html>
+
